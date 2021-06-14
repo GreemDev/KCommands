@@ -2,6 +2,9 @@ package net.greemdev.kcommands
 
 import java.awt.Color
 
+/**
+ * Class containing what would otherwise be constant values.
+ */
 class SlashCommandClientConfig {
 
     companion object {

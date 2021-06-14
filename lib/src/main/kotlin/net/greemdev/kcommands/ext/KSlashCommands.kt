@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.requests.restaction.CommandCreateAction
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction
 import net.dv8tion.jda.internal.JDAImpl
+import net.greemdev.kcommands.GuildSlashCommand
 import net.greemdev.kcommands.SlashCommand
 import net.greemdev.kcommands.obj.SlashCommandCheck
 import net.greemdev.kcommands.obj.SlashCommandContext
@@ -32,7 +33,10 @@ infix fun JDA.withApplicationCommands(slashCommands: Set<SlashCommand>) {
         val data = CommandData(command.name, command.description)
         if (command.options.isNotEmpty())
             data.addOptions(*command.options)
-        upsertCommand(data)
+        if (command is GuildSlashCommand)
+            getGuildById(command.guildId)?.upsertCommand(data)
+        else
+            upsertCommand(data)
     }
 
     RestAction.allOf(actions).queue { list ->

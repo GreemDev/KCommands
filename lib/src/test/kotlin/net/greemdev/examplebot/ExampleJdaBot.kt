@@ -27,7 +27,7 @@ class ExampleJdaBot {
 
     fun start(token: String) {
         jda = JDABuilder.createDefault(token)
-            .addEventListeners(SlashCommandClient.get(SlashCommandClientConfig.justCommands(slashCommands)))
+            .addEventListeners(SlashCommandClient.get(slashCommands))
             .enableIntents(GatewayIntent.getIntents(GatewayIntent.ALL_INTENTS)) //idc about intents in this example tbh
             .build().awaitReady()
     }

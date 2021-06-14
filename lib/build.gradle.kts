@@ -1,5 +1,3 @@
-import java.net.URI
-
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
     id("org.jetbrains.kotlin.jvm") version "1.4.31"
@@ -9,12 +7,8 @@ plugins {
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
-    maven {
-        name = "m2-dv8tion"
-        url = URI("https://m2.dv8tion.net/releases")
-    }
+    maven("https://m2.dv8tion.net/releases")
 }
 
 tasks {
@@ -24,10 +18,11 @@ tasks {
 }
 
 dependencies {
-    implementation("net.dv8tion", "JDA", "4.3.0_277") {
+    api("net.dv8tion", "JDA", "4.3.0_277") {
         exclude(module = "opus-java")
     }
 
-    // Use the Kotlin JDK 8 standard library.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+
+    // Expose the JDK8 stdlib to end-users
+    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 }

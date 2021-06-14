@@ -22,7 +22,7 @@ class SlashCommandClient constructor(private var config: SlashCommandClientConfi
     companion object {
         private lateinit var instance: SlashCommandClient
 
-        infix fun get(config: SlashCommandClientConfig): SlashCommandClient {
+        @JvmStatic infix fun get(config: SlashCommandClientConfig): SlashCommandClient {
             return try {
                 instance
             } catch (e: UninitializedPropertyAccessException) {
@@ -31,11 +31,11 @@ class SlashCommandClient constructor(private var config: SlashCommandClientConfi
             }
         }
 
-        infix fun get(initializer: SlashCommandClientConfig.() -> Unit): SlashCommandClient {
+        @JvmStatic infix fun get(initializer: SlashCommandClientConfig.() -> Unit): SlashCommandClient {
             return get(SlashCommandClientConfig of initializer)
         }
 
-        fun get(commands: Set<SlashCommand> = hashSetOf()) = SlashCommandClientConfig justCommands commands
+        @JvmStatic fun get(commands: Set<SlashCommand> = hashSetOf()) = get(SlashCommandClientConfig justCommands commands)
     }
 
     /**
@@ -52,6 +52,8 @@ class SlashCommandClient constructor(private var config: SlashCommandClientConfi
 
     override fun onSlashCommand(event: SlashCommandEvent) {
         val cmd = config.commands.firstOrNull { it.name == event.name } ?: return
+        if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
+
         val ctx = SlashCommandContext(event, cmd)
         val failedCheck = cmd.checks.firstOrNull { !it.check(ctx) }
         if (failedCheck == null) {
@@ -66,11 +68,10 @@ class SlashCommandClient constructor(private var config: SlashCommandClientConfi
     }
 
     override fun onButtonClick(event: ButtonClickEvent) {
-        with(ButtonClickContext(event)) {
-            config.commands
-                .firstOrNull {
-                    it.name == (parsedComponent().name() ?: event.componentId)
-                }?.handleButtonClick(this)
-        }
+        val ctx = ButtonClickContext(event)
+        val cmd = config.commands.firstOrNull { it.name == (ctx.parsedComponent().name() ?: event.componentId) } ?: return
+        if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
+
+        cmd.handleButtonClick(ctx)
     }
 }
