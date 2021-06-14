@@ -8,7 +8,7 @@ plugins {
     `java-library`
 }
 
-group = "com.github.GreemDev"
+group = "com.github.greemdev"
 
 repositories {
     mavenCentral()
