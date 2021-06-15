@@ -8,4 +8,3 @@
  */
 
 rootProject.name = "net.greemdev.kcommands"
-include("lib")

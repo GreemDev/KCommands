@@ -1,14 +1,16 @@
 plugins {
-    // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.4.31"
+    kotlin("jvm") version "1.4.31"
+
+
+    id("com.github.johnrengelman.shadow") version "6.1.0"
 
     `maven-publish`
 
-    // Apply the java-library plugin for API and implementation separation.
     `java-library`
 }
 
-group = "com.github.greemdev"
+group = "com.github.GreemDev"
+version = "1.0"
 
 repositories {
     mavenCentral()
@@ -19,6 +21,12 @@ tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
+    shadowJar {
+        fun dest(packageName: String): String {
+            return "net.greemdev.kcommands.lib.$packageName"
+        }
+        relocate("net.dv8tion.jda", dest("jda"))
+    }
 }
 
 dependencies {
@@ -26,7 +34,5 @@ dependencies {
         exclude(module = "opus-java")
     }
 
-
-    // Expose the JDK8 stdlib to end-users
     api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 }
