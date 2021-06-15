@@ -21,6 +21,9 @@ tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
+    compileTestKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
     shadowJar {
         fun dest(packageName: String): String {
             return "net.greemdev.kcommands.lib.$packageName"
