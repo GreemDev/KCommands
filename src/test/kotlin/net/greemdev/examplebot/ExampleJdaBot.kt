@@ -81,7 +81,7 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
             color(context.member()?.color ?: Color.MAGENTA)
         }
             //This function call adds the buttons defined in the constructor above; generating them using the value of context.
-            .actionRowsFrom(this, context)
+            .actionRowsFrom(context)
             .queue()
     }
 
