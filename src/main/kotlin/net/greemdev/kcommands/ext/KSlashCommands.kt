@@ -5,6 +5,7 @@ package net.greemdev.kcommands.ext
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -30,7 +31,7 @@ infix fun JDA.applicationCommands(func: ApplicationCommandCreationScope.() -> Un
  */
 infix fun JDA.withApplicationCommands(slashCommands: Set<SlashCommand>) {
     val actions = slashCommands.map { command ->
-        val data = CommandData(command.name, command.description)
+        val data = CommandData(command.name.toLowerCase(), command.description)
         if (command.options.isNotEmpty())
             data.addOptions(*command.options)
         if (command is GuildSlashCommand)
@@ -54,14 +55,16 @@ fun ReplyAction.ephemeral(ephemeral: Boolean = true): ReplyAction {
     return this
 }
 
+fun ButtonClickEvent.parsedId() = ComponentIdBuilder.from(this.componentId)
+
 fun Component.parsedId() =
     ComponentIdBuilder.from(this.id ?: throw IllegalStateException("Cannot use ComponentIdBuilder with a link Button!"))
 
 fun ReplyAction.actionRow(func: () -> Component): ReplyAction = addActionRow(func())
 fun ReplyAction.actionRows(func: () -> Collection<Component>): ReplyAction = allActionRows(*func().toTypedArray())
 fun ReplyAction.allActionRows(vararg components: Component): ReplyAction = addActionRow(*components)
-fun ReplyAction.actionRowsFrom(command: SlashCommand, context: SlashCommandContext): ReplyAction =
-    addActionRow(*command.buttons(context))
+fun ReplyAction.actionRowsFrom(context: SlashCommandContext): ReplyAction =
+    addActionRow(*context.command.buttons(context))
 
 data class ComponentIdBuilder(val sb: StringBuilder = StringBuilder()) {
 

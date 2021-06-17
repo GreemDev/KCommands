@@ -4,10 +4,11 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.interactions.components.ComponentLayout
+import net.greemdev.kcommands.SlashCommand
 import net.greemdev.kcommands.ext.ComponentIdBuilder
 import net.greemdev.kcommands.util.KEmbedBuilder
 
-data class ButtonClickContext(val event: ButtonClickEvent) {
+data class ButtonClickContext(val event: ButtonClickEvent, val command: SlashCommand) {
 
     fun ack() = event.deferEdit()
 

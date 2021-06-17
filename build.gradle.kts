@@ -1,16 +1,11 @@
 plugins {
-    kotlin("jvm") version "1.4.31"
-
-
-    id("com.github.johnrengelman.shadow") version "6.1.0"
-
-    `maven-publish`
+    kotlin("jvm") version "1.5.10"
 
     `java-library`
 }
 
-group = "com.github.GreemDev"
-version = "1.0"
+group = "net.greemdev"
+version = "1.1"
 
 repositories {
     mavenCentral()
@@ -24,11 +19,8 @@ tasks {
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
-    shadowJar {
-        fun dest(packageName: String): String {
-            return "net.greemdev.kcommands.lib.$packageName"
-        }
-        relocate("net.dv8tion.jda", dest("jda"))
+    jar {
+        this.archiveFileName.set("$group.kcommands-${archiveVersion.get()}.jar")
     }
 }
 

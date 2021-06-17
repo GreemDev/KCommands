@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.greemdev.kcommands.ext.parsedId
 import net.greemdev.kcommands.ext.withApplicationCommands
 import net.greemdev.kcommands.obj.ButtonClickContext
 import net.greemdev.kcommands.obj.SlashCommandContext
@@ -16,7 +17,7 @@ import net.greemdev.kcommands.obj.SlashCommandContext
  * Upon receiving the [ReadyEvent], this client will upsert every single command to Discord via HTTP.
  * Once this has been done, a log message will be printed describing what commands were uploaded because they're new. If no commands are new nothing will happen.
  */
-class SlashCommandClient constructor(private var config: SlashCommandClientConfig = SlashCommandClientConfig()) :
+class SlashCommandClient constructor(var config: SlashCommandClientConfig = SlashCommandClientConfig.default()) :
     ListenerAdapter() {
 
     companion object {
@@ -55,21 +56,23 @@ class SlashCommandClient constructor(private var config: SlashCommandClientConfi
         if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
 
         val ctx = SlashCommandContext(event, cmd)
-        val failedCheck = cmd.checks.firstOrNull { !it.check(ctx) }
-        if (failedCheck == null) {
+        val failedChecks = cmd.checks.filter { !it.check(ctx) }
+        if (failedChecks.isEmpty()) {
             cmd.handleSlashCommand(ctx)
         } else {
             ctx.reply {
-                title(config.checkFailedTitle)
-                color(config.checkFailedColor)
-                description(failedCheck.reason())
+                title(config.checksFailedTitle)
+                color(config.checksFailedColor)
+                description(failedChecks.joinToString("\n") {
+                    config.checksFailedLineFormat.replace("{}", it.reason())
+                })
             }.queue()
         }
     }
 
     override fun onButtonClick(event: ButtonClickEvent) {
-        val ctx = ButtonClickContext(event)
-        val cmd = config.commands.firstOrNull { it.name == (ctx.parsedComponent().name() ?: event.componentId) } ?: return
+        val cmd = config.commands.firstOrNull { it.name == (event.parsedId().name() ?: event.componentId) } ?: return
+        val ctx = ButtonClickContext(event, cmd)
         if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
 
         cmd.handleButtonClick(ctx)
