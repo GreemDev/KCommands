@@ -20,7 +20,7 @@ tasks {
         kotlinOptions.jvmTarget = "1.8"
     }
     jar {
-        this.archiveFileName.set("$group.kcommands-${archiveVersion.get()}.jar")
+        this.archiveFileName.set("net.greemdev.kcommands-${archiveVersion.get()}.jar")
     }
 }
 
