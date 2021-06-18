@@ -1,7 +1,10 @@
 package net.greemdev.kcommands
 
-import java.awt.Color
 import net.greemdev.kcommands.obj.SlashCommandCheck
+import net.greemdev.kcommands.util.executeElseNull
+import java.awt.Color
+import java.lang.reflect.Constructor
+import kotlin.reflect.KClass
 
 /**
  * Class containing what would otherwise be constant values.
@@ -9,9 +12,22 @@ import net.greemdev.kcommands.obj.SlashCommandCheck
 class SlashCommandClientConfig private constructor() {
 
     companion object {
-        @JvmStatic fun default() = SlashCommandClientConfig()
-        @JvmStatic infix fun of(initializer: SlashCommandClientConfig.() -> Unit) = default().apply(initializer)
-        @JvmStatic infix fun justCommands(commands: Set<SlashCommand>) = default().commands(commands)
+        @JvmStatic
+        fun default() = SlashCommandClientConfig()
+        @JvmStatic
+        infix fun of(initializer: SlashCommandClientConfig.() -> Unit) = default().apply(initializer)
+        @JvmStatic
+        infix fun justCommands(commands: Collection<SlashCommand>) = default().commands(commands)
+        @JvmStatic infix fun justCommandsFromJavaClasses(classes: Collection<Class<SlashCommand>>): SlashCommandClientConfig {
+            val commands = classes.mapNotNull { executeElseNull { it.getConstructor() } }
+                .map(Constructor<SlashCommand>::newInstance)
+                .filterIsInstance<SlashCommand>()
+            return default().commands(commands)
+        }
+        @JvmStatic
+        infix fun justCommandsFromClasses(classes: Collection<KClass<SlashCommand>>): SlashCommandClientConfig {
+            return justCommandsFromJavaClasses(classes.map { it.java })
+        }
     }
 
     fun commands(coll: Collection<SlashCommand>): SlashCommandClientConfig {
@@ -22,7 +38,7 @@ class SlashCommandClientConfig private constructor() {
     /**
      * The collection (specifically [Set]) containing all of the [SlashCommand] or [GuildSlashCommand] objects to be handled by this [SlashCommandClient].
      */
-    var commands: Set<SlashCommand> = hashSetOf()
+    var commands: Collection<SlashCommand> = hashSetOf()
 
     /**
      * The color of the embed sent when one or more [SlashCommandCheck]s result in a [false] value.

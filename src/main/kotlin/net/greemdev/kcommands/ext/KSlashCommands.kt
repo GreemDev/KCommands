@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType.*
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -29,7 +30,7 @@ infix fun JDA.applicationCommands(func: ApplicationCommandCreationScope.() -> Un
 /**
  * Loops over every [SlashCommand] in the set and creates an upsert [CommandCreateAction] to unify application commands; then queues them all.
  */
-infix fun JDA.withApplicationCommands(slashCommands: Set<SlashCommand>) {
+infix fun JDA.withApplicationCommands(slashCommands: Collection<SlashCommand>) {
     val actions = slashCommands.map { command ->
         val data = CommandData(command.name.toLowerCase(), command.description)
         if (command.options.isNotEmpty())
@@ -65,6 +66,10 @@ fun ReplyAction.actionRows(func: () -> Collection<Component>): ReplyAction = all
 fun ReplyAction.allActionRows(vararg components: Component): ReplyAction = addActionRow(*components)
 fun ReplyAction.actionRowsFrom(context: SlashCommandContext): ReplyAction =
     addActionRow(*context.command.buttons(context))
+
+fun OptionData.choices(vararg pairs: Pair<String, String>) {
+    pairs.forEach { this.addChoice(it.first, it.second) }
+}
 
 data class ComponentIdBuilder(val sb: StringBuilder = StringBuilder()) {
 
@@ -178,7 +183,6 @@ data class HeadlessApplicationCommandButtonCreationScope(val buttons: HashSet<Bu
 
     fun secondary(id: ComponentIdBuilder, emoji: Emoji) = create(ButtonStyle.SECONDARY, id.build(), emoji)
 
-
 }
 
 data class HeadlessApplicationCommandOptionCreationScope(val options: HashSet<OptionData>) {
@@ -187,54 +191,50 @@ data class HeadlessApplicationCommandOptionCreationScope(val options: HashSet<Op
     }
 
     fun optionalString(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.STRING, name, description, func)
+        optional(STRING, name, description, func)
 
     fun optionalBoolean(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.BOOLEAN, name, description, func)
+        optional(BOOLEAN, name, description, func)
 
     fun optionalUser(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.USER, name, description, func)
+        optional(USER, name, description, func)
 
     fun optionalChannel(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.CHANNEL, name, description, func)
+        optional(CHANNEL, name, description, func)
 
     fun optionalInt(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.INTEGER, name, description, func)
+        optional(INTEGER, name, description, func)
 
     fun optionalMentionable(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.MENTIONABLE, name, description, func)
+        optional(MENTIONABLE, name, description, func)
 
     fun optionalRole(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.ROLE, name, description, func)
-    //fun optionalSubcommand(name: String, description: String) = optional(OptionType.SUB_COMMAND, name, description)
-    //fun optionalSubcommandGroup(name: String, description: String) = optional(OptionType.SUB_COMMAND_GROUP, name, description)
+        optional(ROLE, name, description, func)
 
     fun required(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
         options.add(OptionData(type, name, description, true).apply(func))
     }
 
     fun requiredString(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.STRING, name, description, func)
+        required(STRING, name, description, func)
 
     fun requiredBoolean(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.BOOLEAN, name, description, func)
+        required(BOOLEAN, name, description, func)
 
     fun requiredUser(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.USER, name, description, func)
+        required(USER, name, description, func)
 
     fun requiredChannel(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.CHANNEL, name, description, func)
+        required(CHANNEL, name, description, func)
 
     fun requiredInt(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.INTEGER, name, description, func)
+        required(INTEGER, name, description, func)
 
     fun requiredMentionable(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.MENTIONABLE, name, description, func)
+        required(MENTIONABLE, name, description, func)
 
     fun requiredRole(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.ROLE, name, description, func)
-    //fun requiredSubcommand(name: String, description: String) = required(OptionType.SUB_COMMAND, name, description)
-    //fun requiredSubcommandGroup(name: String, description: String) = required(OptionType.SUB_COMMAND_GROUP, name, description)
+        required(ROLE, name, description, func)
 }
 
 
