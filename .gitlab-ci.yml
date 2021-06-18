@@ -12,7 +12,9 @@ before_script:
 
 build:
   stage: build
-  script: bash gradlew jar
+  script:
+    - chmod +x ./gradlew
+    - ./gradlew jar
   artifacts:
     when: on_success
     paths:
