@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java
+        with:
+          distribution: 'adopt'
+          java-version: '8'
+
+      - name: Compile
+        run: "./gradlew.bat jar"
+
+      - name: Upload library jar as artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: KCommands
+          path: build/libs/lib.jar

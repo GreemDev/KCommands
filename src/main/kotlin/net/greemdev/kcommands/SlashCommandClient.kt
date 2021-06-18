@@ -11,7 +11,6 @@ import net.greemdev.kcommands.ext.withApplicationCommands
 import net.greemdev.kcommands.obj.ButtonClickContext
 import net.greemdev.kcommands.obj.SlashCommandContext
 import net.greemdev.kcommands.util.executeElseNull
-import sun.plugin.dom.exception.InvalidStateException
 
 /**
  * A JDA [ListenerAdapter] handling [SlashCommand] checking and execution.
@@ -43,10 +42,15 @@ class SlashCommandClient internal constructor(var config: SlashCommandClientConf
     /**
      * Whether or not the current [SlashCommandClient] has had its commands upserted to Discord and is ready to receive command events.
      */
+    @Suppress("RedundantSetter", "RedundantGetter")
     var isInitialized = false
+        get() { return field }
+        private set(value) {
+            field = value
+        }
 
     override fun onReady(event: ReadyEvent) {
-        if (isInitialized) throw InvalidStateException("Cannot reinitialize the Slash Command client.")
+        if (isInitialized) throw IllegalStateException("Cannot reinitialize the Slash Command client.")
         event.jda withApplicationCommands config.commands
         isInitialized = true
     }
