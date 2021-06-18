@@ -13,7 +13,6 @@ before_script:
 build:
   stage: build
   script:
-    - chmod +x ./gradlew
     - ./gradlew jar
   artifacts:
     when: on_success
