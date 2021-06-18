@@ -6,7 +6,7 @@ import net.greemdev.kcommands.SlashCommand
 import net.greemdev.kcommands.util.KEmbedBuilder
 import kotlin.jvm.Throws
 
-data class SlashCommandContext(val event: SlashCommandEvent, val command: SlashCommand) {
+data class SlashCommandContext internal constructor(val event: SlashCommandEvent, val command: SlashCommand) {
 
     fun name() = event.name
     fun subcommandName() = event.subcommandName

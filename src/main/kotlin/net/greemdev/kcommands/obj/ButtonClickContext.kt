@@ -8,7 +8,7 @@ import net.greemdev.kcommands.SlashCommand
 import net.greemdev.kcommands.ext.ComponentIdBuilder
 import net.greemdev.kcommands.util.KEmbedBuilder
 
-data class ButtonClickContext(val event: ButtonClickEvent, val command: SlashCommand) {
+data class ButtonClickContext internal constructor(val event: ButtonClickEvent, val command: SlashCommand) {
 
     fun ack() = event.deferEdit()
 

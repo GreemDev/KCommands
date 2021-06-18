@@ -11,14 +11,13 @@ fun embed(func: KEmbedBuilder.() -> Unit): MessageEmbed {
     return KEmbedBuilder(func).build()
 }
 
-data class KEmbedBuilder(private var backing: EmbedBuilder) {
+data class KEmbedBuilder(private var backing: EmbedBuilder = EmbedBuilder()) {
 
     companion object {
         infix fun of(builder: EmbedBuilder): KEmbedBuilder = KEmbedBuilder(builder)
         infix fun of(embed: MessageEmbed): KEmbedBuilder = KEmbedBuilder(embed)
         infix fun of(func: KEmbedBuilder.() -> Unit): KEmbedBuilder = KEmbedBuilder().apply(func)
     }
-    constructor() : this(EmbedBuilder())
 
     constructor(from: MessageEmbed) : this(EmbedBuilder(from))
 

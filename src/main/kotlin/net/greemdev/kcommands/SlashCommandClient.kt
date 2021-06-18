@@ -10,6 +10,8 @@ import net.greemdev.kcommands.ext.parsedId
 import net.greemdev.kcommands.ext.withApplicationCommands
 import net.greemdev.kcommands.obj.ButtonClickContext
 import net.greemdev.kcommands.obj.SlashCommandContext
+import net.greemdev.kcommands.util.executeElseNull
+import sun.plugin.dom.exception.InvalidStateException
 
 /**
  * A JDA [ListenerAdapter] handling [SlashCommand] checking and execution.
@@ -17,16 +19,15 @@ import net.greemdev.kcommands.obj.SlashCommandContext
  * Upon receiving the [ReadyEvent], this client will upsert every single command to Discord via HTTP.
  * Once this has been done, a log message will be printed describing what commands were uploaded because they're new. If no commands are new nothing will happen.
  */
-class SlashCommandClient constructor(var config: SlashCommandClientConfig = SlashCommandClientConfig.default()) :
+@Suppress("MemberVisibilityCanBePrivate") //I personally use the config of this client in private bots
+class SlashCommandClient internal constructor(var config: SlashCommandClientConfig = SlashCommandClientConfig.default()) :
     ListenerAdapter() {
 
     companion object {
         private lateinit var instance: SlashCommandClient
 
         @JvmStatic infix fun get(config: SlashCommandClientConfig): SlashCommandClient {
-            return try {
-                instance
-            } catch (e: UninitializedPropertyAccessException) {
+            return executeElseNull { instance } ?: run {
                 instance = SlashCommandClient(config)
                 instance
             }
@@ -44,12 +45,11 @@ class SlashCommandClient constructor(var config: SlashCommandClientConfig = Slas
      */
     var isInitialized = false
 
-    private fun init(jda: JDA) {
-        jda withApplicationCommands config.commands
+    override fun onReady(event: ReadyEvent) {
+        if (isInitialized) throw InvalidStateException("Cannot reinitialize the Slash Command client.")
+        event.jda withApplicationCommands config.commands
         isInitialized = true
     }
-
-    override fun onReady(event: ReadyEvent) = init(event.jda)
 
     override fun onSlashCommand(event: SlashCommandEvent) {
         val cmd = config.commands.firstOrNull { it.name == event.name } ?: return
@@ -73,8 +73,7 @@ class SlashCommandClient constructor(var config: SlashCommandClientConfig = Slas
     override fun onButtonClick(event: ButtonClickEvent) {
         val cmd = config.commands.firstOrNull { it.name == (event.parsedId().name() ?: event.componentId) } ?: return
         val ctx = ButtonClickContext(event, cmd)
-        if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
-
-        cmd.handleButtonClick(ctx)
+        if ((cmd is GuildSlashCommand && cmd.guildId != event.guild?.id))
+            cmd.handleButtonClick(ctx)
     }
 }

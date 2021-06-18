@@ -1,3 +1,5 @@
+import java.time.Instant
+
 plugins {
     kotlin("jvm") version "1.5.10"
 
@@ -6,6 +8,7 @@ plugins {
 
 group = "net.greemdev"
 version = "1.1"
+val isSnapshot = true
 
 repositories {
     mavenCentral()
@@ -20,7 +23,11 @@ tasks {
         kotlinOptions.jvmTarget = "1.8"
     }
     jar {
-        this.archiveFileName.set("net.greemdev.kcommands-${archiveVersion.get()}.jar")
+        if (isSnapshot) {
+            this.archiveFileName.set("net.greemdev.kcommands-SNAPSHOT-${Instant.now()}.jar")
+        } else {
+            this.archiveFileName.set("net.greemdev.kcommands-${archiveVersion.get()}.jar")
+        }
     }
 }
 
