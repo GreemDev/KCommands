@@ -30,73 +30,59 @@ data class KEmbedBuilder(private var backing: EmbedBuilder = EmbedBuilder()) {
     fun length(): Int = backing.length()
 
     inline fun fields(func: FieldCreationScope.() -> Unit): KEmbedBuilder {
-        FieldCreationScope().func()
-        return this
+        return this.also { FieldCreationScope().func() }
     }
 
     fun field(name: String, body: Any): KEmbedBuilder {
-        backing.addField(name, body.toString(), false)
-        return this
+        return this.also { backing.addField(name, body.toString(), false) }
     }
 
     fun fieldInline(name: String, body: Any): KEmbedBuilder {
-        backing.addField(name, body.toString(), true)
-        return this
+        return this.also { backing.addField(name, body.toString(), true) }
     }
 
     infix fun description(content: CharSequence?): KEmbedBuilder {
-        backing.setDescription(content)
-        return this
+        return this.also { backing.setDescription(content) }
     }
 
     infix fun appendDescription(content: CharSequence): KEmbedBuilder {
-        backing.appendDescription(content)
-        return this
+        return this.also { backing.appendDescription(content) }
     }
 
     infix fun buildDescription(func: StringBuilder.() -> Unit): KEmbedBuilder {
-        backing.setDescription(StringBuilder().apply(func))
-        return this
+        return this.also { backing.setDescription(StringBuilder().apply(func)) }
     }
 
     fun author(name: String, url: String? = null, iconUrl: String? = null): KEmbedBuilder {
-        backing.setAuthor(name, url, iconUrl)
-        return this
+        return this.also { backing.setAuthor(name, url, iconUrl) }
     }
 
     fun footer(text: String?, iconUrl: String? = null): KEmbedBuilder {
-        backing.setFooter(text, iconUrl)
-        return this
+        return this.also { backing.setFooter(text, iconUrl) }
     }
 
     infix fun timestamp(temporal: TemporalAccessor): KEmbedBuilder {
-        backing.setTimestamp(temporal)
-        return this
+        return this.also { backing.setTimestamp(temporal) }
     }
 
     infix fun color(color: Color?): KEmbedBuilder {
-        backing.setColor(color)
-        return this
+        return this.also { backing.setColor(color) }
     }
 
     infix fun colorRaw(color: Int): KEmbedBuilder {
-        backing.setColor(color)
-        return this
+        return this.also { backing.setColor(color) }
     }
 
     infix fun image(url: String?): KEmbedBuilder {
-        backing.setImage(url)
-        return this
+        return this.also { backing.setImage(url) }
     }
 
     infix fun thumbnail(url: String?): KEmbedBuilder {
-        backing.setThumbnail(url)
-        return this
+        return this.also { backing.setThumbnail(url) }
     }
 
     fun title(title: String?, url: String? = null): KEmbedBuilder {
-        backing.setTitle(title, url)
-        return this
+        return this.also { backing.setTitle(title, url) }
     }
 
     fun build(): MessageEmbed = backing.build()

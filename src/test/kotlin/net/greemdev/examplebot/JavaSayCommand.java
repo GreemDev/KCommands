@@ -2,7 +2,7 @@ package net.greemdev.examplebot;
 
 import kotlin.Unit;
 import net.greemdev.kcommands.SlashCommand;
-import net.greemdev.kcommands.ext.ComponentIdBuilder;
+import net.greemdev.kcommands.ext.ButtonComponentId;
 import net.greemdev.kcommands.obj.ButtonClickContext;
 import net.greemdev.kcommands.obj.SlashCommandContext;
 import org.jetbrains.annotations.NotNull;
@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.*;
 import java.util.Objects;
 
+@SuppressWarnings("ConstantConditions")
 public class JavaSayCommand extends SlashCommand {
 
     public JavaSayCommand() {
@@ -21,7 +22,7 @@ public class JavaSayCommand extends SlashCommand {
         });
 
         buttons((scope, ctx) -> {
-            ComponentIdBuilder id = ComponentIdBuilder.from(this)
+            ButtonComponentId id = ButtonComponentId.from(this)
                     .user(ctx.user().getId())
                     .action("delete");
             scope.danger(id, "Danger", null);
@@ -39,7 +40,7 @@ public class JavaSayCommand extends SlashCommand {
 
     @Override
     public void handleSlashCommand(@NotNull SlashCommandContext context) {
-        String content = Objects.requireNonNull(context.getEvent().getOption("content")).getAsString(); //java doesnt like my getoptionvalue functions
+        String content = context.option("content").getAsString(); //java doesnt like my getoptionvalue functions
         context.reply(k -> {
             k.description(content);
             k.color(Color.GREEN);
@@ -51,12 +52,10 @@ public class JavaSayCommand extends SlashCommand {
 
     @Override
     public void handleButtonClick(@NotNull ButtonClickContext context) {
-        ComponentIdBuilder id = context.parsedComponent();
+        ButtonComponentId id = context.parsedComponent();
         if (!context.user().getId().equals(id.user())) return;
         if ("delete".equals(id.action())) {
-            context.ack()
-                    .flatMap(v -> Objects.requireNonNull(context.message()).delete())
-                    .queue();
+            context.ack().queue(v -> context.message().delete().queue());
         }
     }
 }

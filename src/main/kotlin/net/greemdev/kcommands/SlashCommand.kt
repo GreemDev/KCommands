@@ -16,7 +16,7 @@ abstract class SlashCommand(val name: String, val description: String) {
     var options: Array<OptionData> = arrayOf()
     var checks: Array<SlashCommandCheck> = arrayOf()
 
-    fun buttons(context: SlashCommandContext): Array<Button> = CreationScopes.headlessButtons().apply { internalLazyButtons(context) }.buttons.toTypedArray()
+    fun buttons(context: SlashCommandContext): Array<Button> = CreationScopes.Headless.buttons().apply { internalLazyButtons(context) }.buttons.toTypedArray()
 
     private var internalLazyButtons: HeadlessApplicationCommandButtonCreationScope.(SlashCommandContext) -> Unit = { }
 
@@ -41,8 +41,18 @@ abstract class SlashCommand(val name: String, val description: String) {
      */
     @Suppress("KDocUnresolvedReference")
     fun checks(func: HeadlessApplicationCommandCheckCreationScope.() -> Unit) {
-        checks = CreationScopes.headlessChecks().apply(func).checks.toTypedArray()
+        checks = CreationScopes.Headless.checks().apply(func).checks.toTypedArray()
     }
+
+    /**
+     * Creates a new [ButtonComponentId] with `commandName`, its first piece, set as the current command's name.
+     */
+    fun newButtonId() = ButtonComponentId.from(this)
+
+    /**
+     * Creates a new [ButtonComponentId] from [newButtonId] and then applies [func] to it allowing for receiver creation of [ButtonComponentId]s.
+     */
+    fun buttonId(func: ButtonComponentId.() -> Unit) = newButtonId().apply(func)
 
     /**
      * The function called when this command has been invoked from Discord.

@@ -3,11 +3,12 @@
 package net.greemdev.kcommands.ext
 
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
-import net.dv8tion.jda.api.interactions.commands.OptionType.*
 import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.OptionType.*
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.components.Button
@@ -20,9 +21,11 @@ import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction
 import net.dv8tion.jda.internal.JDAImpl
 import net.greemdev.kcommands.GuildSlashCommand
 import net.greemdev.kcommands.SlashCommand
+import net.greemdev.kcommands.SlashCommandClient
 import net.greemdev.kcommands.obj.SlashCommandCheck
 import net.greemdev.kcommands.obj.SlashCommandContext
 import net.greemdev.kcommands.util.executeElseNull
+import net.greemdev.kcommands.util.markdown
 
 infix fun JDA.applicationCommands(func: ApplicationCommandCreationScope.() -> Unit): CommandListUpdateAction =
     updateCommands().also { CreationScopes.commands(it).func() }
@@ -56,10 +59,10 @@ fun ReplyAction.ephemeral(ephemeral: Boolean = true): ReplyAction {
     return this
 }
 
-fun ButtonClickEvent.parsedId() = ComponentIdBuilder.from(this.componentId)
+fun ButtonClickEvent.parsedId() = ButtonComponentId.new(this.componentId)
 
 fun Component.parsedId() =
-    ComponentIdBuilder.from(this.id ?: throw IllegalStateException("Cannot use ComponentIdBuilder with a link Button!"))
+    ButtonComponentId.new(this.id ?: throw IllegalStateException("Cannot use ComponentIdBuilder with a link Button!"))
 
 fun ReplyAction.actionRow(func: () -> Component): ReplyAction = addActionRow(func())
 fun ReplyAction.actionRows(func: () -> Collection<Component>): ReplyAction = allActionRows(*func().toTypedArray())
@@ -67,21 +70,50 @@ fun ReplyAction.allActionRows(vararg components: Component): ReplyAction = addAc
 fun ReplyAction.actionRowsFrom(context: SlashCommandContext): ReplyAction =
     addActionRow(*context.command.buttons(context))
 
+/**
+ * Adds all the choices in [pairs] to the current [OptionData], using [Pair.first] as the name and [Pair.second] as the value.
+ */
 fun OptionData.choices(vararg pairs: Pair<String, String>) {
     pairs.forEach { this.addChoice(it.first, it.second) }
 }
 
-data class ComponentIdBuilder(val sb: StringBuilder = StringBuilder()) {
+/**
+ * Adds all the choices in [choices] to the current [OptionData], using the choice [String] as the choice name and value.
+ */
+fun OptionData.choices(vararg choices: String) {
+    choices(*choices.map { it to it }.toTypedArray())
+}
+
+/**
+ * Wrapper for the extremely basic Discord Component ID system.
+ *
+ * [name] is the command name;
+ *
+ * [user] is the user that clicked the button;
+ *
+ * [action] is the action to perform, useful for commands with multiple buttons, or even paginators;
+ *
+ * [value] is the value passed, useful for having multiple buttons with differing values for options to choose what people can do.
+ * To get the finished value, call [asString] and you'll get the formatted ID.
+ *
+ *
+ * The formatted ID follows a specific format: `name:user:action:value`
+ */
+data class ButtonComponentId(val sb: StringBuilder = StringBuilder()) {
 
     fun raw() = sb.toString()
 
     companion object {
         @JvmStatic
-        fun new(): ComponentIdBuilder = ComponentIdBuilder()
+        fun new(): ButtonComponentId = ButtonComponentId()
+
         @JvmStatic
-        fun from(componentId: String): ComponentIdBuilder = ComponentIdBuilder(StringBuilder(componentId))
+        fun new(initialValue: CharSequence): ButtonComponentId = ButtonComponentId(
+            if (initialValue is StringBuilder) initialValue else StringBuilder(initialValue)
+        )
+
         @JvmStatic
-        fun from(command: SlashCommand): ComponentIdBuilder = ComponentIdBuilder().name(command.name)
+        fun from(command: SlashCommand): ButtonComponentId = new().name(command.name)
     }
 
     fun name(): String? = executeElseNull { raw().split(':')[0] }
@@ -89,16 +121,16 @@ data class ComponentIdBuilder(val sb: StringBuilder = StringBuilder()) {
     fun action(): String? = executeElseNull { raw().split(':')[2] }
     fun value(): String? = executeElseNull { raw().split(':')[3] }
 
-    fun name(value: String) = this.apply {
+    fun name(value: Any) = this.apply {
         sb.append("$value:")
     }
 
-    fun user(value: String) = this.apply {
+    fun user(value: Any) = this.apply {
         sb.append("$value:")
     }
 
 
-    fun action(value: String) = this.apply {
+    fun action(value: Any) = this.apply {
         sb.append("$value:")
     }
 
@@ -108,25 +140,25 @@ data class ComponentIdBuilder(val sb: StringBuilder = StringBuilder()) {
     }
 
 
-    fun build(): String = sb.toString().trimEnd { it == ':' }
+    fun asString(): String = sb.toString().trimEnd { it == ':' }
 }
 
-object CreationScopes {
-    fun headlessOptions(options: HashSet<OptionData> = hashSetOf()) =
-        HeadlessApplicationCommandOptionCreationScope(options)
+internal object CreationScopes {
+    internal object Headless {
+        fun options(options: HashSet<OptionData> = hashSetOf()) = HeadlessApplicationCommandOptionCreationScope(options)
+        fun checks(checks: HashSet<SlashCommandCheck> = hashSetOf()) =
+            HeadlessApplicationCommandCheckCreationScope(checks)
 
-    fun headlessChecks(checks: HashSet<SlashCommandCheck> = hashSetOf()) =
-        HeadlessApplicationCommandCheckCreationScope(checks)
+        fun buttons(buttons: HashSet<Button> = hashSetOf()) = HeadlessApplicationCommandButtonCreationScope(buttons)
+    }
 
-    fun headlessButtons(buttons: HashSet<Button> = hashSetOf()) = HeadlessApplicationCommandButtonCreationScope(buttons)
     fun commands(action: CommandListUpdateAction) = ApplicationCommandCreationScope(action)
     fun options(data: CommandData) = ApplicationCommandOptionCreationScope(data)
-
 }
 
 
 fun buildOptions(func: HeadlessApplicationCommandOptionCreationScope.() -> Unit): Array<OptionData> {
-    return CreationScopes.headlessOptions().apply(func).options.toTypedArray()
+    return CreationScopes.Headless.options().apply(func).options.toTypedArray()
 }
 
 data class HeadlessApplicationCommandCheckCreationScope(val checks: HashSet<SlashCommandCheck> = hashSetOf()) {
@@ -135,7 +167,41 @@ data class HeadlessApplicationCommandCheckCreationScope(val checks: HashSet<Slas
     }
 
     fun check(initializer: SlashCommandCheck.() -> Unit) {
-        checks.add(SlashCommandCheck{true}.apply(initializer))
+        checks.add(SlashCommandCheck().apply(initializer))
+    }
+
+    fun requireUserAdministrator() {
+        check("User does not have the Administrator permission.") {
+            it.member()?.hasPermission(Permission.ADMINISTRATOR) ?: false
+        }
+    }
+
+    fun requireUserApplicationOwner() {
+        check("User is not an owner of the Application.") {
+            SlashCommandClient.get().applicationOwners.contains(it.userId())
+        }
+    }
+
+    fun requireUserPermission(vararg perms: Permission) {
+        check {
+            predicate {
+                val failed = hashSetOf<Permission>()
+                if (it.member() == null) {
+                    reason("User not in a guild.")
+                    return@predicate false
+                }
+
+                for (perm in perms) {
+                    if (!it.member()!!.hasPermission(perm))
+                        failed.add(perm)
+                }
+
+                if (failed.isNotEmpty()) {
+                    reason("User does not have the following permissions: ${markdown(failed.joinToString(", ") { p -> p.getName() }).inlineCode()}")
+                    false
+                } else true
+            }
+        }
     }
 
     fun check(failureReason: String, predicate: (SlashCommandContext) -> Boolean) {
@@ -154,15 +220,15 @@ data class HeadlessApplicationCommandButtonCreationScope(val buttons: HashSet<Bu
         buttons.add(Button.of(style, idOrUrl, emoji))
     }
 
-    fun danger(id: ComponentIdBuilder, label: String, emoji: Emoji? = null) =
-        create(ButtonStyle.DANGER, id.build(), label, emoji)
+    fun danger(id: ButtonComponentId, label: String, emoji: Emoji? = null) =
+        create(ButtonStyle.DANGER, id.asString(), label, emoji)
 
-    fun danger(id: ComponentIdBuilder, emoji: Emoji) = create(ButtonStyle.DANGER, id.build(), emoji)
+    fun danger(id: ButtonComponentId, emoji: Emoji) = create(ButtonStyle.DANGER, id.asString(), emoji)
 
-    fun success(id: ComponentIdBuilder, label: String, emoji: Emoji? = null) =
-        create(ButtonStyle.SUCCESS, id.build(), label, emoji)
+    fun success(id: ButtonComponentId, label: String, emoji: Emoji? = null) =
+        create(ButtonStyle.SUCCESS, id.asString(), label, emoji)
 
-    fun success(id: ComponentIdBuilder, emoji: Emoji) = create(ButtonStyle.SUCCESS, id.build(), emoji)
+    fun success(id: ButtonComponentId, emoji: Emoji) = create(ButtonStyle.SUCCESS, id.asString(), emoji)
 
 
     fun link(url: String, label: String, emoji: Emoji? = null) {
@@ -173,20 +239,20 @@ data class HeadlessApplicationCommandButtonCreationScope(val buttons: HashSet<Bu
         buttons.add(Button.link(url, emoji))
     }
 
-    fun primary(id: ComponentIdBuilder, label: String, emoji: Emoji? = null) =
-        create(ButtonStyle.PRIMARY, id.build(), label, emoji)
+    fun primary(id: ButtonComponentId, label: String, emoji: Emoji? = null) =
+        create(ButtonStyle.PRIMARY, id.asString(), label, emoji)
 
-    fun primary(id: ComponentIdBuilder, emoji: Emoji) = create(ButtonStyle.PRIMARY, id.build(), emoji)
+    fun primary(id: ButtonComponentId, emoji: Emoji) = create(ButtonStyle.PRIMARY, id.asString(), emoji)
 
-    fun secondary(id: ComponentIdBuilder, label: String, emoji: Emoji? = null) =
-        create(ButtonStyle.SECONDARY, id.build(), label, emoji)
+    fun secondary(id: ButtonComponentId, label: String, emoji: Emoji? = null) =
+        create(ButtonStyle.SECONDARY, id.asString(), label, emoji)
 
-    fun secondary(id: ComponentIdBuilder, emoji: Emoji) = create(ButtonStyle.SECONDARY, id.build(), emoji)
+    fun secondary(id: ButtonComponentId, emoji: Emoji) = create(ButtonStyle.SECONDARY, id.asString(), emoji)
 
 }
 
-data class HeadlessApplicationCommandOptionCreationScope(val options: HashSet<OptionData>) {
-    fun optional(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
+data class HeadlessApplicationCommandOptionCreationScope(val options: HashSet<OptionData> = hashSetOf()) {
+    private fun optional(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
         options.add(OptionData(type, name, description, false).apply(func))
     }
 
@@ -211,7 +277,7 @@ data class HeadlessApplicationCommandOptionCreationScope(val options: HashSet<Op
     fun optionalRole(name: String, description: String, func: OptionData.() -> Unit = {}) =
         optional(ROLE, name, description, func)
 
-    fun required(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
+    private fun required(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
         options.add(OptionData(type, name, description, true).apply(func))
     }
 
@@ -252,53 +318,53 @@ data class ApplicationCommandCreationScope(private val action: CommandListUpdate
 
 data class ApplicationCommandOptionCreationScope(private val data: CommandData) {
 
-    fun optional(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
+    private fun optional(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
         data.addOptions(OptionData(type, name, description, false).apply(func))
     }
 
     fun optionalString(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.STRING, name, description, func)
+        optional(STRING, name, description, func)
 
     fun optionalBoolean(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.BOOLEAN, name, description, func)
+        optional(BOOLEAN, name, description, func)
 
     fun optionalUser(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.USER, name, description, func)
+        optional(USER, name, description, func)
 
     fun optionalChannel(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.CHANNEL, name, description, func)
+        optional(CHANNEL, name, description, func)
 
     fun optionalInt(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.INTEGER, name, description, func)
+        optional(INTEGER, name, description, func)
 
     fun optionalMentionable(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.MENTIONABLE, name, description, func)
+        optional(MENTIONABLE, name, description, func)
 
     fun optionalRole(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        optional(OptionType.ROLE, name, description, func)
+        optional(ROLE, name, description, func)
 
-    fun required(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
+    private fun required(type: OptionType, name: String, description: String, func: OptionData.() -> Unit = {}) {
         data.addOptions(OptionData(type, name, description, true).apply(func))
     }
 
     fun requiredString(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.STRING, name, description, func)
+        required(STRING, name, description, func)
 
     fun requiredBoolean(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.BOOLEAN, name, description, func)
+        required(BOOLEAN, name, description, func)
 
     fun requiredUser(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.USER, name, description, func)
+        required(USER, name, description, func)
 
     fun requiredChannel(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.CHANNEL, name, description, func)
+        required(CHANNEL, name, description, func)
 
     fun requiredInt(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.INTEGER, name, description, func)
+        required(INTEGER, name, description, func)
 
     fun requiredMentionable(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.MENTIONABLE, name, description, func)
+        required(MENTIONABLE, name, description, func)
 
     fun requiredRole(name: String, description: String, func: OptionData.() -> Unit = {}) =
-        required(OptionType.ROLE, name, description, func)
+        required(ROLE, name, description, func)
 }

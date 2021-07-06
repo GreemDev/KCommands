@@ -1,6 +1,6 @@
 package net.greemdev.kcommands.obj
 
-data class SlashCommandCheck(var check: (SlashCommandContext) -> Boolean) {
+data class SlashCommandCheck(var check: (SlashCommandContext) -> Boolean = {true}) {
 
     private var failureReason: String = "no reason provided"
 

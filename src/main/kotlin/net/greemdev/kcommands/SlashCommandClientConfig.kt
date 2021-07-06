@@ -7,9 +7,10 @@ import java.lang.reflect.Constructor
 import kotlin.reflect.KClass
 
 /**
- * Class containing what would otherwise be constant values.
+ * Class containing what would otherwise be constant values; configurable when creating your [SlashCommandClient].
  */
-class SlashCommandClientConfig private constructor() {
+@Suppress("DataClassPrivateConstructor")
+data class SlashCommandClientConfig private constructor(var commands: Set<SlashCommand> = hashSetOf()) {
 
     companion object {
         @JvmStatic
@@ -34,11 +35,6 @@ class SlashCommandClientConfig private constructor() {
         commands = coll.toHashSet()
         return this
     }
-
-    /**
-     * The collection (specifically [Set]) containing all of the [SlashCommand] or [GuildSlashCommand] objects to be handled by this [SlashCommandClient].
-     */
-    var commands: Collection<SlashCommand> = hashSetOf()
 
     /**
      * The color of the embed sent when one or more [SlashCommandCheck]s result in a [false] value.
