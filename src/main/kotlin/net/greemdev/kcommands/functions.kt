@@ -1,5 +1,5 @@
 @file:JvmName("CoreUtil")
-package net.greemdev.kcommands.util
+package net.greemdev.kcommands
 
 fun <V> executeElseNull(func: () -> V): V? = try { func() } catch (t: Throwable) { null }
 

@@ -1,6 +1,6 @@
 @file:JvmName("InteractionUtil")
 
-package net.greemdev.kcommands.ext
+package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
@@ -19,13 +19,6 @@ import net.dv8tion.jda.api.requests.restaction.CommandCreateAction
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction
 import net.dv8tion.jda.internal.JDAImpl
-import net.greemdev.kcommands.GuildSlashCommand
-import net.greemdev.kcommands.SlashCommand
-import net.greemdev.kcommands.SlashCommandClient
-import net.greemdev.kcommands.obj.SlashCommandCheck
-import net.greemdev.kcommands.obj.SlashCommandContext
-import net.greemdev.kcommands.util.executeElseNull
-import net.greemdev.kcommands.util.markdown
 
 infix fun JDA.applicationCommands(func: ApplicationCommandCreationScope.() -> Unit): CommandListUpdateAction =
     updateCommands().also { CreationScopes.commands(it).func() }
@@ -35,7 +28,7 @@ infix fun JDA.applicationCommands(func: ApplicationCommandCreationScope.() -> Un
  */
 infix fun JDA.withApplicationCommands(slashCommands: Collection<SlashCommand>) {
     val actions = slashCommands.map { command ->
-        val data = CommandData(command.name.toLowerCase(), command.description)
+        val data = CommandData(command.name.lowercase(), command.description)
         if (command.options.isNotEmpty())
             data.addOptions(*command.options)
         if (command is GuildSlashCommand)
@@ -62,7 +55,7 @@ fun ReplyAction.ephemeral(ephemeral: Boolean = true): ReplyAction {
 fun ButtonClickEvent.parsedId() = ButtonComponentId.new(this.componentId)
 
 fun Component.parsedId() =
-    ButtonComponentId.new(this.id ?: throw IllegalStateException("Cannot use ComponentIdBuilder with a link Button!"))
+    ButtonComponentId.new(this.id ?: throw IllegalStateException("Cannot use ButtonComponentId with a link Button!"))
 
 fun ReplyAction.actionRow(func: () -> Component): ReplyAction = addActionRow(func())
 fun ReplyAction.actionRows(func: () -> Collection<Component>): ReplyAction = allActionRows(*func().toTypedArray())
@@ -85,7 +78,7 @@ fun OptionData.choices(vararg choices: String) {
 }
 
 /**
- * Wrapper for the extremely basic Discord Component ID system.
+ * An excessively high-level wrapper for the basic Discord Component ID system.
  *
  * [name] is the command name;
  *
@@ -103,6 +96,8 @@ data class ButtonComponentId(val sb: StringBuilder = StringBuilder()) {
 
     fun raw() = sb.toString()
 
+    val sep = SlashCommandClient.get().config.componentIdSeparator
+
     companion object {
         @JvmStatic
         fun new(): ButtonComponentId = ButtonComponentId()
@@ -116,31 +111,31 @@ data class ButtonComponentId(val sb: StringBuilder = StringBuilder()) {
         fun from(command: SlashCommand): ButtonComponentId = new().name(command.name)
     }
 
-    fun name(): String? = executeElseNull { raw().split(':')[0] }
-    fun user(): String? = executeElseNull { raw().split(':')[1] }
-    fun action(): String? = executeElseNull { raw().split(':')[2] }
-    fun value(): String? = executeElseNull { raw().split(':')[3] }
+    fun name(): String? = executeElseNull { raw().split(sep)[0] }
+    fun user(): String? = executeElseNull { raw().split(sep)[1] }
+    fun action(): String? = executeElseNull { raw().split(sep)[2] }
+    fun value(): String? = executeElseNull { raw().split(sep)[3] }
 
     fun name(value: Any) = this.apply {
-        sb.append("$value:")
+        sb.append("$value$sep")
     }
 
     fun user(value: Any) = this.apply {
-        sb.append("$value:")
+        sb.append("$value$sep")
     }
 
 
     fun action(value: Any) = this.apply {
-        sb.append("$value:")
+        sb.append("$value$sep")
     }
 
 
     fun value(value: Any?) = this.apply {
-        sb.append("$value:")
+        sb.append("$value$sep")
     }
 
 
-    fun asString(): String = sb.toString().trimEnd { it == ':' }
+    fun asString(): String = sb.toString().trimEnd { it == sep }
 }
 
 internal object CreationScopes {
@@ -162,6 +157,7 @@ fun buildOptions(func: HeadlessApplicationCommandOptionCreationScope.() -> Unit)
 }
 
 data class HeadlessApplicationCommandCheckCreationScope(val checks: HashSet<SlashCommandCheck> = hashSetOf()) {
+
     fun check(predicate: (SlashCommandContext) -> Boolean, initializer: SlashCommandCheck.() -> Unit) {
         checks.add(SlashCommandCheck(predicate).apply(initializer))
     }
@@ -171,14 +167,14 @@ data class HeadlessApplicationCommandCheckCreationScope(val checks: HashSet<Slas
     }
 
     fun requireUserAdministrator() {
-        check("User does not have the Administrator permission.") {
+        check(SlashCommandClient.get().config.checkUserNotAdmin) {
             it.member()?.hasPermission(Permission.ADMINISTRATOR) ?: false
         }
     }
 
     fun requireUserApplicationOwner() {
-        check("User is not an owner of the Application.") {
-            SlashCommandClient.get().applicationOwners.contains(it.userId())
+        check(SlashCommandClient.get().config.checkUserNotOwner) {
+            it.userId() in SlashCommandClient.get().applicationOwners
         }
     }
 

@@ -8,11 +8,6 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.greemdev.kcommands.ext.parsedId
-import net.greemdev.kcommands.ext.withApplicationCommands
-import net.greemdev.kcommands.obj.ButtonClickContext
-import net.greemdev.kcommands.obj.SlashCommandContext
-import net.greemdev.kcommands.util.executeElseNull
 
 /**
  * A JDA [ListenerAdapter] handling [SlashCommand] checking and execution.

@@ -1,12 +1,9 @@
-package net.greemdev.kcommands.obj
+package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.interactions.components.ComponentLayout
-import net.greemdev.kcommands.SlashCommand
-import net.greemdev.kcommands.ext.ButtonComponentId
-import net.greemdev.kcommands.util.KEmbedBuilder
 
 data class ButtonClickContext internal constructor(val event: ButtonClickEvent, val command: SlashCommand) {
 
@@ -14,7 +11,7 @@ data class ButtonClickContext internal constructor(val event: ButtonClickEvent, 
 
     fun button() = event.button
     fun componentId() = event.componentId
-    fun buttonId() = ButtonComponentId.new(event.componentId)
+    fun buttonId() = event.parsedId()
     fun componentType() = event.componentType
     fun interaction() = event.interaction
     fun message() = event.message

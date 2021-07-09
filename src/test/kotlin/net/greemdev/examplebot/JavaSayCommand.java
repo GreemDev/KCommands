@@ -1,14 +1,10 @@
 package net.greemdev.examplebot;
 
 import kotlin.Unit;
-import net.greemdev.kcommands.SlashCommand;
-import net.greemdev.kcommands.ext.ButtonComponentId;
-import net.greemdev.kcommands.obj.ButtonClickContext;
-import net.greemdev.kcommands.obj.SlashCommandContext;
+import net.greemdev.kcommands.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.util.Objects;
 
 @SuppressWarnings("ConstantConditions")
 public class JavaSayCommand extends SlashCommand {
@@ -22,8 +18,8 @@ public class JavaSayCommand extends SlashCommand {
         });
 
         buttons((scope, ctx) -> {
-            ButtonComponentId id = ButtonComponentId.from(this)
-                    .user(ctx.user().getId())
+            ButtonComponentId id = newButtonId()
+                    .user(ctx.userId())
                     .action("delete");
             scope.danger(id, "Danger", null);
             return Unit.INSTANCE;
@@ -40,19 +36,21 @@ public class JavaSayCommand extends SlashCommand {
 
     @Override
     public void handleSlashCommand(@NotNull SlashCommandContext context) {
-        String content = context.option("content").getAsString(); //java doesnt like my getoptionvalue functions
-        context.reply(k -> {
-            k.description(content);
-            k.color(Color.GREEN);
+        String content = context.option("content").getAsString(); //java doesnt like my getOptionValue functions
+
+        context.replyWithButtonsAsync(scope -> {
+            scope.embed(k -> {
+                k.description(content);
+                k.color(Color.GREEN);
+                return Unit.INSTANCE;
+            });
             return Unit.INSTANCE;
-        })
-                .addActionRow(buttons(context))
-                .queue();
+        });
     }
 
     @Override
     public void handleButtonClick(@NotNull ButtonClickContext context) {
-        ButtonComponentId id = context.parsedComponent();
+        ButtonComponentId id = context.buttonId();
         if (!context.user().getId().equals(id.user())) return;
         if ("delete".equals(id.action())) {
             context.ack().queue(v -> context.message().delete().queue());

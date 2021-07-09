@@ -1,4 +1,4 @@
-package net.greemdev.kcommands.obj
+package net.greemdev.kcommands
 
 data class SlashCommandCheck(var check: (SlashCommandContext) -> Boolean = {true}) {
 

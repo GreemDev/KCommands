@@ -2,10 +2,7 @@ package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.components.Button
-import net.greemdev.kcommands.ext.*
-import net.greemdev.kcommands.obj.ButtonClickContext
-import net.greemdev.kcommands.obj.SlashCommandCheck
-import net.greemdev.kcommands.obj.SlashCommandContext
+import net.greemdev.kcommands.*
 
 /**
  * The base class for all Slash Commands. This provides a high-level API for creating and executing Slash Commands;

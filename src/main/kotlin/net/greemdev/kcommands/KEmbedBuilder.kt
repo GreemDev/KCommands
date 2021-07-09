@@ -1,10 +1,8 @@
-package net.greemdev.kcommands.util
+package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import java.awt.Color
-import java.time.Instant
 import java.time.temporal.TemporalAccessor
 
 fun embed(func: KEmbedBuilder.() -> Unit): MessageEmbed {

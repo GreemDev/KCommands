@@ -1,7 +1,7 @@
+@file:Suppress("KDocUnresolvedReference")
+
 package net.greemdev.kcommands
 
-import net.greemdev.kcommands.obj.SlashCommandCheck
-import net.greemdev.kcommands.util.executeElseNull
 import java.awt.Color
 import java.lang.reflect.Constructor
 import kotlin.reflect.KClass
@@ -37,15 +37,18 @@ data class SlashCommandClientConfig private constructor(var commands: Set<SlashC
     }
 
     /**
+     * The separator used when forming and parsing [ButtonComponentId]s.
+     */
+    var componentIdSeparator: Char = ':'
+
+    /**
      * The color of the embed sent when one or more [SlashCommandCheck]s result in a [false] value.
      */
-    @Suppress("KDocUnresolvedReference")
     var checksFailedColor: Color = Color.RED
 
     /**
      * The title of the embed sent when one or more [SlashCommandCheck]s result in a [false] value.
      */
-    @Suppress("KDocUnresolvedReference")
     var checksFailedTitle: String = "One or more checks failed"
 
     /**
@@ -53,4 +56,14 @@ data class SlashCommandClientConfig private constructor(var commands: Set<SlashC
      * The value [{}] gets replaced with the failed check's reason.
      */
     var checksFailedLineFormat: String = " - {}"
+
+    /**
+     * The failure reason of the default [requireUserApplicationOwner] check.
+     */
+    var checkUserNotOwner: String = "User is not an owner of the Application."
+
+    /**
+     * The failure reason of the default [requireUserAdministrator] check.
+     */
+    var checkUserNotAdmin: String = "User does not have the Administrator permission."
 }

@@ -1,11 +1,10 @@
-package net.greemdev.kcommands.obj
+package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction
-import net.greemdev.kcommands.SlashCommand
-import net.greemdev.kcommands.util.KEmbedBuilder
 
 data class SlashCommandContext internal constructor(val event: SlashCommandEvent, val command: SlashCommand) {
 
@@ -13,7 +12,7 @@ data class SlashCommandContext internal constructor(val event: SlashCommandEvent
     fun subcommandName() = event.subcommandName
     fun subcommandGroup() = event.subcommandGroup
     fun commandId() = event.commandId
-    fun options() = event.options
+    fun options(): List<OptionMapping> = event.options
 
     fun token() = event.token
     fun isDm() = !event.isFromGuild
@@ -93,7 +92,7 @@ data class SlashCommandContext internal constructor(val event: SlashCommandEvent
             this.embeds.addAll(embeds.toList())
         }
 
-        fun restAction(): ReplyAction {
+        internal fun restAction(): ReplyAction {
             val action = if (content != null)
                 event.reply(content!!)
             else if (embeds.isNotEmpty())
@@ -130,7 +129,5 @@ data class SlashCommandContext internal constructor(val event: SlashCommandEvent
             User::class -> asUser
             else -> throw IllegalArgumentException("Type is not of a known option type.")
         } as T
-
     }
-
 }

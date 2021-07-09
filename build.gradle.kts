@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     kotlin("jvm") version "1.5.10"
 
@@ -5,29 +7,24 @@ plugins {
 }
 
 group = "net.greemdev"
-version = "1.1"
+version = "1.2"
 
 repositories {
     maven("https://mvn.greemdev.net/repository/maven-central")
-    maven("https://m2.dv8tion.net/releases")
+    maven("https://mvn.greemdev.net/repository/dv8tion")
 }
 
 tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
     jar {
-        archiveFileName.set("lib.jar")
+        archiveFileName.set("${project.group}.KCommands-${archiveVersion.get()}.jar")
     }
 }
 
 dependencies {
-    api("net.dv8tion", "JDA", "4.3.0_277") {
+    api("net.dv8tion", "JDA", "4.3.0_295") {
         exclude(module = "opus-java")
     }
-
-    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 }
