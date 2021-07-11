@@ -53,7 +53,7 @@ class SlashCommandClient internal constructor(var config: SlashCommandClientConf
         when (event::class) {
             ReadyEvent::class -> { event as ReadyEvent
                 if (isInitialized) throw IllegalStateException("Cannot reinitialize the Slash Command client.")
-                event.jda withApplicationCommands config.commands
+                event.jda withApplicationCommands config.commands()
                 isInitialized = true
                 event.jda.retrieveApplicationInfo().queue {
                     applicationOwners = hashSetOf<String>().apply {
@@ -67,12 +67,11 @@ class SlashCommandClient internal constructor(var config: SlashCommandClientConf
             }
 
             SlashCommandEvent::class -> { event as SlashCommandEvent
-                val cmd = config.commands.firstOrNull { it.name == event.name } ?: return
+                val cmd = config.commandBy(event.name) ?: return
                 if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
 
                 val ctx = SlashCommandContext(event, cmd)
-                val failedChecks = cmd.checks
-                    .filter { !it.check(ctx) }
+                val failedChecks = cmd.checks.filter { !it.check(ctx) }
                 if (failedChecks.isEmpty()) {
                     cmd.handleSlashCommand(ctx)
                 } else {
@@ -86,7 +85,7 @@ class SlashCommandClient internal constructor(var config: SlashCommandClientConf
                 }
             }
             ButtonClickEvent::class -> { event as ButtonClickEvent
-                val cmd = config.commands.firstOrNull { it.name == (event.parsedId().name() ?: event.componentId) } ?: return
+                val cmd = config.commandBy(event.parsedId().name() ?: event.componentId) ?: return
                 val ctx = ButtonClickContext(event, cmd)
                 if (!(cmd is GuildSlashCommand && cmd.guildId != event.guild?.id))
                     cmd.handleButtonClick(ctx)

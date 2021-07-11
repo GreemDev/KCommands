@@ -166,6 +166,10 @@ data class HeadlessApplicationCommandCheckCreationScope(val checks: HashSet<Slas
         checks.add(SlashCommandCheck().apply(initializer))
     }
 
+    operator fun plusAssign(other: Pair<String, (SlashCommandContext) -> Boolean>) {
+        check(other.first, other.second)
+    }
+
     fun requireUserAdministrator() {
         check(SlashCommandClient.get().config.checkUserNotAdmin) {
             it.member()?.hasPermission(Permission.ADMINISTRATOR) ?: false

@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
  * Class containing what would otherwise be constant values; configurable when creating your [SlashCommandClient].
  */
 @Suppress("DataClassPrivateConstructor")
-data class SlashCommandClientConfig private constructor(var commands: Set<SlashCommand> = hashSetOf()) {
+data class SlashCommandClientConfig private constructor(private var commands: Set<SlashCommand> = hashSetOf()) {
 
     companion object {
         @JvmStatic
@@ -32,9 +32,13 @@ data class SlashCommandClientConfig private constructor(var commands: Set<SlashC
     }
 
     fun commands(coll: Collection<SlashCommand>): SlashCommandClientConfig {
-        commands = coll.toHashSet()
+        commands = commands.toHashSet().apply { addAll(coll) }
         return this
     }
+
+    fun commands(): HashSet<SlashCommand> = commands.toHashSet()
+
+    fun commandBy(name: String) = commands().firstOrNull { it.name.equals(name, true) }
 
     /**
      * The separator used when forming and parsing [ButtonComponentId]s.

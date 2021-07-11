@@ -68,6 +68,10 @@ data class SlashCommandContext internal constructor(val event: SlashCommandEvent
             this.actionModifier = func
         }
 
+        operator fun plusAssign(other: ReplyAction.() -> Unit) {
+            modifier(other)
+        }
+
         fun buttons(ctx: SlashCommandContext) {
             buttons.addAll(ctx.command.buttons(ctx))
         }
