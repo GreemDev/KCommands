@@ -10,38 +10,48 @@ import kotlin.reflect.KClass
  * Class containing what would otherwise be constant values; configurable when creating your [SlashCommandClient].
  */
 @Suppress("DataClassPrivateConstructor")
-data class SlashCommandClientConfig private constructor(private var commands: Set<SlashCommand> = hashSetOf()) {
+data class SlashCommandClientConfig private constructor(private var commands: HashSet<SlashCommand> = hashSetOf()) {
 
     companion object {
         @JvmStatic
         fun default() = SlashCommandClientConfig()
+
         @JvmStatic
         infix fun of(initializer: SlashCommandClientConfig.() -> Unit) = default().apply(initializer)
+
         @JvmStatic
         infix fun justCommands(commands: Collection<SlashCommand>) = default().commands(commands)
-        @JvmStatic infix fun justCommandsFromJavaClasses(classes: Collection<Class<SlashCommand>>): SlashCommandClientConfig {
-            val commands = classes.mapNotNull { executeElseNull { it.getConstructor() } }
+        @JvmStatic
+        infix fun justCommandsFromJavaClasses(classes: Collection<Class<SlashCommand>>): SlashCommandClientConfig {
+            val commands = classes.mapNotNull {
+                tryOrNull {
+                    it.getConstructor()
+                }
+            }
                 .map(Constructor<SlashCommand>::newInstance)
                 .filterIsInstance<SlashCommand>()
             return default().commands(commands)
         }
+
         @JvmStatic
-        infix fun justCommandsFromClasses(classes: Collection<KClass<SlashCommand>>): SlashCommandClientConfig {
-            return justCommandsFromJavaClasses(classes.map { it.java })
-        }
+        infix fun justCommandsFromClasses(classes: Collection<KClass<SlashCommand>>) =
+            justCommandsFromJavaClasses(classes.map { it.java })
+
     }
 
     fun commands(coll: Collection<SlashCommand>): SlashCommandClientConfig {
-        commands = commands.toHashSet().apply { addAll(coll) }
+        commands = commands.apply { addAll(coll) }
         return this
     }
 
-    fun commands(): HashSet<SlashCommand> = commands.toHashSet()
+    fun allCommands(): HashSet<SlashCommand> = commands.toHashSet()
+    fun globalCommands(): HashSet<SlashCommand> = commands.filter { it !is GuildSlashCommand }.toHashSet()
+    fun guildCommands(): HashSet<GuildSlashCommand> = commands.filterIsInstance<GuildSlashCommand>().toHashSet()
 
-    fun commandBy(name: String) = commands().firstOrNull { it.name.equals(name, true) }
+    fun commandBy(name: String) = allCommands().firstOrNull { it.name.equals(name, true) }
 
     /**
-     * The separator used when forming and parsing [ButtonComponentId]s.
+     * The separator used when forming and parsing [ComponentId]s.
      */
     var componentIdSeparator: Char = ':'
 

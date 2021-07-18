@@ -45,31 +45,43 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
             requiredString("content", "What to say")
         }
 
-        // This is where it gets weird.
-        buttons { ctx -> // Because buttons are only needed when the command is being executed, you have access to the SlashCommandContext
-                         // that triggered it allowing usage of data that is only accessible when a command is run inside the component ID.
-
-            var id = newButtonId()
-                .user(ctx.userId())
-                .action("delete")
-
-            //Alternatively:
-            id = buttonId {
-                user(ctx.userId())
-                action("delete")
+        components {
+            selectionMenus { ctx ->
+                menu("example") {
+                    addOption("Choose me!", "1")
+                    addOption(ctx.userId(), "2")
+                }
             }
 
-            danger(id, "Delete")
-            /*  Note the use of 'newButtonId', returning a value of 'ButtonComponentId'.
-                With this library, button component IDs follow a pattern: commandName:userId:action:value.
+            // This is where it gets weird.
+            buttons { ctx -> // Because buttons are only needed when the command is being executed, you have access to the SlashCommandContext
+                // that triggered it allowing usage of data that is only accessible when a command is run inside the component ID.
 
-                    commandName is used to filter command events into specific SlashCommand handleButtonClick functions.
-                    userId is to prevent spoofing.
-                    action is which action the button is doing; note above it's '.action("delete")' because the action is delete.
-                        In the button click handler we'll check the action.
-                    value is needed in some small cases; an example being a purge command like shown in the JDA examples.
-            */
+                var id = newComponentId()
+                    .user(ctx.userId())
+                    .action("delete")
+
+                //Alternatively:
+                id = componentId {
+                    user(ctx.userId())
+                    action("delete")
+                }
+
+                danger(id, "Delete")
+                /*  Note the use of 'newButtonId', returning a value of 'ButtonComponentId'.
+                    With this library, button component IDs follow a pattern: commandName:userId:action:value.
+
+                        commandName is used to filter command events into specific SlashCommand handleButtonClick functions.
+                        userId is to prevent spoofing.
+                        action is which action the button is doing; note above it's '.action("delete")' because the action is delete.
+                            In the button click handler we'll check the action.
+                        value is needed in some small cases; an example being a purge command like shown in the JDA examples.
+                */
+            }
         }
+
+
+
 
         // Checks are tested against when a SlashCommandEvent is received and automatically replied to with the failureReason when it fails.
         // If any checks return true on a command, handleSlashCommand is not called.
@@ -83,6 +95,11 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
                 !ctx.user().isBot
             }
 
+            // There's also a plusAssign overload.
+            this += "User is a bot." to { ctx ->
+                !ctx.user().isBot
+            }
+
             // The library also provides rather basic premade checks:
             requireUserAdministrator()
             requireUserApplicationOwner()
@@ -90,7 +107,8 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
         }
     }
 
-    override fun handleSlashCommand(context: SlashCommandContext) {
+    @Suppress("UNREACHABLE_CODE")
+    override fun handleSlashCommand(context: SlashCommandContext): SlashCommandResult {
         // Because the option was created above as required, we can get the option without a problem.
         val content = context.getOptionValue<String>("content")
 
@@ -103,53 +121,52 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
         // Because this is an example, we're going to have multiple uncommented statements that all achieve the same end goal;
         // showing you the different ways you can approach how you design your commands.
 
-        ///----------------------------1: As little repeated code as possible--------------------------------------
+        return context.result {
 
-        context.replyWithButtonsAsync {
-
-            modifier {
-                ephemeral()
-            }
-
-            embed {
+            withEmbed {
                 description(content)
                 color(context.member()?.color ?: Color.MAGENTA)
             }
+            ephemeral()
+            notEphemeral()
+            withAllCommandComponents()
+
         }
 
-        ///----------------------------2: Standard JDA RestAction chaining--------------------------------------\
-
-        context.reply {
-            description(content)
-            color(context.member()?.color ?: Color.MAGENTA)
-        }
-            // This function call adds the buttons defined in the constructor above; generating them using the value of context.
-            .actionRowsFrom(context)
+        return context.result()
+            .withEmbed {
+                description(content)
+                color(context.member()?.color ?: Color.MAGENTA)
+            }
             .ephemeral()
-            .queue()
+            .notEphemeral()
+            .withAllCommandComponents()
 
-        ///----------------------------3: A little more repeated code than #1 I guess--------------------------------------
-
-        context.replyAsync {
-            buttons(context)
-
-            modifier {
-                ephemeral()
-            }
-
-            embed {
-                description(content)
-                color(context.member()?.color ?: Color.MAGENTA)
-            }
-        }
     }
 
     override fun handleButtonClick(context: ButtonClickContext) {
-        val id = context.buttonId() //this is a ButtonComponentId
+        val id = context.buttonId() //this is a ComponentId
         if (id.user() != context.user().id) return
         when (id.action()) {
-            // This is where the button's ButtonComponentId#action(Any) call comes to use
+            // This is where the button's ComponentId#action(Any) call comes to use
             "delete" -> context.ack().queue { context.message()?.delete()?.queue() }
+        }
+    }
+
+    override fun handleSelectionMenu(context: SelectionMenuContext) {
+        val id = context.menuId() // ComponentId
+        if (id.user() != context.user().id) return
+        context.ack().queue {
+            context.selectedMenuOptions().forEach {
+                when (it.value) {
+                    "1" -> {
+                        context.message()!!.guild.members.random().ban(1, "You just got really unlucky").queue()
+                    }
+                    "2" -> {
+                        context.channel().retrievePinnedMessages().queue { msgs -> msgs.random().delete().reason("fuck this particular message").queue() }
+                    }
+                }
+            }
         }
     }
 }

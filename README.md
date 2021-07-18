@@ -28,7 +28,7 @@ Maven:
 ```xml
 <dependency>
     <groupId>net.greemdev</groupId>
-    <artifactId>kcommands</artifactId>
+    <artifactId>KCommands</artifactId>
     <version>VERSION</version>
 </dependency>
 
@@ -41,7 +41,7 @@ Maven:
 Gradle:
 ```groovy
 dependencies {
-    implementation("net.greemdev:kcommands:VERSION")
+    implementation("net.greemdev:KCommands:VERSION")
 }
 
 repositories {

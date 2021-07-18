@@ -2,9 +2,11 @@ package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
+import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -17,14 +19,14 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
  * Once initialization is complete, the client is ready to go.
  */
 @Suppress("MemberVisibilityCanBePrivate") //I personally use the config of this client in private bots
-class SlashCommandClient internal constructor(var config: SlashCommandClientConfig = SlashCommandClientConfig.default()) :
+class SlashCommandClient internal constructor(private var config: SlashCommandClientConfig = SlashCommandClientConfig.default()) :
     EventListener {
 
     companion object {
         private lateinit var instance: SlashCommandClient
 
         @JvmStatic infix fun get(config: SlashCommandClientConfig): SlashCommandClient {
-            return executeElseNull { instance } ?: run {
+            return tryOrNull { instance } ?: run {
                 instance = SlashCommandClient(config)
                 instance
             }
@@ -39,6 +41,8 @@ class SlashCommandClient internal constructor(var config: SlashCommandClientConf
 
     internal var applicationOwners = arrayOf<String>()
 
+    fun config() = config
+
     /**
      * Whether or not the current [SlashCommandClient] has had its commands upserted to Discord and is ready to receive command events.
      */
@@ -50,45 +54,53 @@ class SlashCommandClient internal constructor(var config: SlashCommandClientConf
         }
 
     override fun onEvent(event: GenericEvent) {
-        when (event::class) {
-            ReadyEvent::class -> { event as ReadyEvent
+
+        fun SlashCommand.shouldHandle(guild: Guild?) = (this is GuildSlashCommand && this.usableIn(guild?.id))
+
+        when (event) {
+            is ReadyEvent -> {
                 if (isInitialized) throw IllegalStateException("Cannot reinitialize the Slash Command client.")
-                event.jda withApplicationCommands config.commands()
-                isInitialized = true
+                event.jda withApplicationCommands config.allCommands()
                 event.jda.retrieveApplicationInfo().queue {
-                    applicationOwners = hashSetOf<String>().apply {
-                        if (it.team != null) {
-                            addAll(it.team!!.members.map { m -> m.user.id })
-                        } else {
-                            add(it.owner.id)
-                        }
-                    }.toTypedArray()
+                    applicationOwners = if (it.team != null) {
+                        arrayOf(*it.team!!.members.map { m -> m.user.id }.toTypedArray())
+                    } else arrayOf(it.owner.id)
+
+                    isInitialized = true
                 }
             }
 
-            SlashCommandEvent::class -> { event as SlashCommandEvent
+            is SlashCommandEvent -> {
                 val cmd = config.commandBy(event.name) ?: return
-                if (cmd is GuildSlashCommand && cmd.guildId != event.guild?.id) return
+                if (!cmd.shouldHandle(event.guild)) return
 
                 val ctx = SlashCommandContext(event, cmd)
-                val failedChecks = cmd.checks.filter { !it.check(ctx) }
-                if (failedChecks.isEmpty()) {
-                    cmd.handleSlashCommand(ctx)
-                } else {
-                    ctx.reply {
-                        title(config.checksFailedTitle)
-                        color(config.checksFailedColor)
-                        description(failedChecks.joinToString("\n") {
-                            config.checksFailedLineFormat.replace("{}", it.reason())
-                        })
-                    }.queue()
+                val failedChecks = cmd.runChecks(ctx)
+                if (failedChecks.isEmpty()) cmd.handleSlashCommand(ctx) else {
+                    ctx.result {
+                        withEmbed {
+                            title(config.checksFailedTitle)
+                            color(config.checksFailedColor)
+                            description(failedChecks.joinToString("\n") {
+                                config.checksFailedLineFormat.replace("{}", it.reason())
+                            })
+                        }
+                    }
+                }.buildAsRestAction().queue()
+            }
+            is ButtonClickEvent -> {
+                val cmd = config.commandBy(event.parsedId().name() ?: event.componentId) ?: return
+                if (!cmd.shouldHandle(event.guild)) return
+                with (ButtonClickContext(event, cmd)) {
+                    cmd.handleButtonClick(this)
                 }
             }
-            ButtonClickEvent::class -> { event as ButtonClickEvent
+            is SelectionMenuEvent -> {
                 val cmd = config.commandBy(event.parsedId().name() ?: event.componentId) ?: return
-                val ctx = ButtonClickContext(event, cmd)
-                if (!(cmd is GuildSlashCommand && cmd.guildId != event.guild?.id))
-                    cmd.handleButtonClick(ctx)
+                if (!cmd.shouldHandle(event.guild)) return
+                with (SelectionMenuContext(event, cmd)) {
+                    cmd.handleSelectionMenu(this)
+                }
             }
         }
     }

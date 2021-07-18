@@ -3,14 +3,18 @@ package net.greemdev.kcommands
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
+import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent
 import net.dv8tion.jda.api.interactions.components.ComponentLayout
+import net.dv8tion.jda.api.interactions.components.selections.SelectOption
+import java.lang.IllegalStateException
 
-data class ButtonClickContext internal constructor(val event: ButtonClickEvent, val command: SlashCommand) {
+data class SelectionMenuContext internal constructor(val event: SelectionMenuEvent, val command: SlashCommand) {
 
     fun ack() = event.deferEdit()
 
-    fun button() = event.button
-    fun buttonId() = event.parsedId()
+    fun menu() = event.selectionMenu
+    fun menuId() = event.parsedId()
+    fun selectedMenuOptions(): MutableList<SelectOption> = event.selectedOptions ?: throw IllegalStateException("Cannot access selected Menu options on an ephemeral message.")
     fun componentType() = event.componentType
     fun interaction() = event.interaction
     fun message() = event.message
