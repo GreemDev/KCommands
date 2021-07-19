@@ -24,6 +24,7 @@ class SlashCommandClient internal constructor(private var config: SlashCommandCl
 
     companion object {
         private lateinit var instance: SlashCommandClient
+        private lateinit var jda: JDA
 
         @JvmStatic infix fun get(config: SlashCommandClientConfig): SlashCommandClient {
             return tryOrNull { instance } ?: run {
@@ -61,6 +62,7 @@ class SlashCommandClient internal constructor(private var config: SlashCommandCl
             is ReadyEvent -> {
                 if (isInitialized) throw IllegalStateException("Cannot reinitialize the Slash Command client.")
                 event.jda withApplicationCommands config.allCommands()
+                jda = event.jda
                 event.jda.retrieveApplicationInfo().queue {
                     applicationOwners = if (it.team != null) {
                         arrayOf(*it.team!!.members.map { m -> m.user.id }.toTypedArray())
@@ -71,12 +73,13 @@ class SlashCommandClient internal constructor(private var config: SlashCommandCl
             }
 
             is SlashCommandEvent -> {
+                jda = event.jda
                 val cmd = config.commandBy(event.name) ?: return
                 if (!cmd.shouldHandle(event.guild)) return
 
                 val ctx = SlashCommandContext(event, cmd)
                 val failedChecks = cmd.runChecks(ctx)
-                if (failedChecks.isEmpty()) cmd.handleSlashCommand(ctx) else {
+                val result = if (failedChecks.isEmpty()) cmd.handleSlashCommand(ctx) else {
                     ctx.result {
                         withEmbed {
                             title(config.checksFailedTitle)
@@ -86,9 +89,11 @@ class SlashCommandClient internal constructor(private var config: SlashCommandCl
                             })
                         }
                     }
-                }.buildAsRestAction().queue()
+                }
+                result.buildAsRestAction().queue(result.hookCallback)
             }
             is ButtonClickEvent -> {
+                jda = event.jda
                 val cmd = config.commandBy(event.parsedId().name() ?: event.componentId) ?: return
                 if (!cmd.shouldHandle(event.guild)) return
                 with (ButtonClickContext(event, cmd)) {
@@ -96,6 +101,7 @@ class SlashCommandClient internal constructor(private var config: SlashCommandCl
                 }
             }
             is SelectionMenuEvent -> {
+                jda = event.jda
                 val cmd = config.commandBy(event.parsedId().name() ?: event.componentId) ?: return
                 if (!cmd.shouldHandle(event.guild)) return
                 with (SelectionMenuContext(event, cmd)) {

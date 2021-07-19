@@ -29,7 +29,7 @@ class ExampleJdaBot {
     fun start(token: String) {
         jda = JDABuilder.createDefault(token)
             .addEventListeners(SlashCommandClient.get(slashCommands))
-            .enableIntents(GatewayIntent.getIntents(GatewayIntent.ALL_INTENTS)) //idc about intents in this example tbh
+            //idc about intents in this example tbh
             .build().awaitReady()
     }
 
@@ -65,10 +65,11 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
                 id = componentId {
                     user(ctx.userId())
                     action("delete")
+
                 }
 
                 danger(id, "Delete")
-                /*  Note the use of 'newButtonId', returning a value of 'ButtonComponentId'.
+                /*  Note the use of 'newComponentId', returning a value of 'ButtonComponentId'. (or componentId { })
                     With this library, button component IDs follow a pattern: commandName:userId:action:value.
 
                         commandName is used to filter command events into specific SlashCommand handleButtonClick functions.
@@ -77,10 +78,15 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
                             In the button click handler we'll check the action.
                         value is needed in some small cases; an example being a purge command like shown in the JDA examples.
                 */
+
+                componentId {
+                    user(ctx.userId())
+                    action("delete")
+                    danger(this, action()?.replaceFirstChar { it.uppercase().first() }!!)
+                    //you could also theoretically make the button in here, which might make it desirable
+                }
             }
         }
-
-
 
 
         // Checks are tested against when a SlashCommandEvent is received and automatically replied to with the failureReason when it fails.
@@ -127,19 +133,18 @@ class SayCommand : SlashCommand("say", "Bot repeats what you tell it to.") {
                 description(content)
                 color(context.member()?.color ?: Color.MAGENTA)
             }
-            ephemeral()
-            notEphemeral()
+            withEphemeral()
             withAllCommandComponents()
 
         }
 
+        @Suppress("SimplifyBooleanWithConstants")
         return context.result()
             .withEmbed {
                 description(content)
                 color(context.member()?.color ?: Color.MAGENTA)
             }
-            .ephemeral()
-            .notEphemeral()
+            .withEphemeral(true or false) //false is redundant, unless you set the value variably by an outside factor.
             .withAllCommandComponents()
 
     }

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     kotlin("jvm") version "1.5.21"
 
@@ -10,6 +12,7 @@ version = "1.3"
 repositories {
     maven("https://mvn.greemdev.net/repository/maven-central")
     maven("https://mvn.greemdev.net/repository/dv8tion")
+    mavenCentral()
 }
 
 tasks {
@@ -25,4 +28,5 @@ dependencies {
     api("net.dv8tion", "JDA", "4.3.0_297") {
         exclude(module = "opus-java")
     }
+    implementation(kotlin("stdlib-jdk8"))
 }

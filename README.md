@@ -16,8 +16,9 @@ See [the Kotlin example](https://code.greemdev.net/greem/KCommands/-/blob/main/s
 </table>
 
 ### Note:
-This library was not made with Java interop in mind. Most of the functions will make you return `Unit.INSTANCE`.
-If this does not deter you, you can see basic (comment-less) usage [here](https://code.greemdev.net/greem/KCommands/-/blob/main/src/test/kotlin/net/greemdev/examplebot/JavaSayCommand.java).
+~~This library was not made with Java interop in mind. Most of the functions will make you return `Unit.INSTANCE`.~~
+**This is no longer the case!** You can see example usages of the interopability [here](https://code.greemdev.net/greem/KCommands/-/blob/main/src/test/kotlin/net/greemdev/examplebot/JavaSayCommand.java).
+  - Please do note that most of the functions are just converting Java function types (Consumer, BiConsumer, etc) to Kotlin FunctionX<> types, allowing Consumer usage with the Kotlin API.
 
 ## Installation
 

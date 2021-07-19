@@ -2,9 +2,11 @@ package net.greemdev.kcommands
 
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.interactions.components.selections.SelectionMenu
+import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction
 
 data class SlashCommandResult(val ctx: SlashCommandContext) {
@@ -22,15 +24,28 @@ data class SlashCommandResult(val ctx: SlashCommandContext) {
     private var message: Message? = null
     private var format: Pair<String, Array<out Any>>? = null
     private var actionModifiers: HashSet<ReplyAction.() -> Unit> = hashSetOf()
+    var hookCallback: (InteractionHook) -> Unit = { }
+    private var onlyAck: Boolean = false
     private var actionRows: HashSet<ActionRow> = hashSetOf()
 
     infix fun withRawModification(func: ReplyAction.() -> Unit): SlashCommandResult = this.also {
         this.actionModifiers.add(func)
     }
 
+    infix fun withCallback(func: (InteractionHook) -> Unit) = this.also {
+        hookCallback = func
+    }
+
+    fun ack(callback: (InteractionHook) -> Unit) = this.also {
+        hookCallback = callback
+        onlyAck = true
+    }
+
 
     internal fun buildAsRestAction(): ReplyAction {
-        val action = if (content != null)
+        val action = if (onlyAck)
+            ctx.event.deferReply(ephemeral)
+        else if (content != null)
             ctx.event.reply(content!!)
         else if (embeds.isNotEmpty())
             ctx.event.replyEmbeds(embeds)
@@ -40,10 +55,12 @@ data class SlashCommandResult(val ctx: SlashCommandContext) {
             ctx.event.replyFormat(format!!.first, format!!.second)
         else throw IllegalStateException("Cannot form a ReplyAction with no data.")
 
+
         if (actionRows.isNotEmpty())
             action.addActionRows(actionRows)
 
-        return action.ephemeral(ephemeral).apply { actionModifiers.forEach { it(this) } }
+        return if (onlyAck) action
+        else action.ephemeral(ephemeral).apply { actionModifiers.forEach { it(this) } }
     }
 
     /**
@@ -55,33 +72,36 @@ data class SlashCommandResult(val ctx: SlashCommandContext) {
     }
 
     fun withButtons(): SlashCommandResult = this.also {
-        this.actionRows.add(ActionRow.of(ctx.command.components().buttons(ctx)))
+        this.actionRows.add(actionRow(ctx.command.components().buttons(ctx)))
     }
 
 
     fun withButtons(vararg buttons: Button): SlashCommandResult = this.also {
-        this.actionRows.add(ActionRow.of(buttons.toHashSet()))
+        this.actionRows.add(actionRow(*buttons))
     }
 
 
     fun withSelectionMenus(): SlashCommandResult = this.also {
-        this.actionRows.add(ActionRow.of(ctx.command.components().selectionMenus(ctx)))
+        this.actionRows.add(actionRow(ctx.command.components().selectionMenus(ctx)))
     }
 
 
     fun withAllCommandComponents(): SlashCommandResult = this.withButtons().withSelectionMenus()
 
     fun withSelectionMenus(vararg menus: SelectionMenu): SlashCommandResult = this.also {
-        this.actionRows.add(ActionRow.of(menus.toHashSet()))
+        this.actionRows.add(actionRow(*menus))
     }
 
-
-    fun ephemeral(): SlashCommandResult = this.also {
-        ephemeral = true
-    }
-
-    fun notEphemeral(): SlashCommandResult = this.also {
-        ephemeral = false
+    /**
+     * Makes the command's resulting message [ephemeral], which makes the message show only to the command's invoker.
+     *
+     * Usable with [ack].
+     *
+     * If you were going to pass [false] into this function; you can just ignore this function as false is the default.
+     * This function only has use when you want the message to be ephemeral, or if you have changing
+     */
+    fun withEphemeral(value: Boolean = true): SlashCommandResult = this.also {
+        ephemeral = value
     }
 
 

@@ -9,15 +9,15 @@ import java.util.function.Consumer;
 
 public class Java {
 
-    private static final KotlinInterop REF = new KotlinInterop();
+    private static final Kotlin REF = new Kotlin();
 
     private Java() {}
 
-    public static KotlinInterop interop() {
+    public static Kotlin interop() {
         return REF;
     }
 
-    public static class KotlinInterop {
+    public static class Kotlin {
 
         public <P1> Function1<P1, Unit> consumer(Consumer<P1> consumer) {
             return (parameter) -> {
