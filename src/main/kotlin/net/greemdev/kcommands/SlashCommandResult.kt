@@ -97,8 +97,8 @@ data class SlashCommandResult(val ctx: SlashCommandContext) {
      *
      * Usable with [ack].
      *
-     * If you were going to pass [false] into this function; you can just ignore this function as false is the default.
-     * This function only has use when you want the message to be ephemeral, or if you have changing
+     * If you were going to pass [false] into this function; you can just ignore this function as false is what's normally set.
+     * This function only has use when you want the message to be ephemeral, or if you have changing "ephemerability" via conditionals.
      */
     fun withEphemeral(value: Boolean = true): SlashCommandResult = this.also {
         ephemeral = value
